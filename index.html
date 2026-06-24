@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a1f2e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="가계부" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <title>가계부</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f1219;
+      --surface: #1a1f2e;
+      --surface2: #242b3d;
+      --surface3: #2e3650;
+      --accent: #6c8fff;
+      --accent2: #a78bfa;
+      --success: #34d399;
+      --danger: #f87171;
+      --warning: #fbbf24;
+      --text: #e8ecf4;
+      --text2: #8b95b0;
+      --text3: #5a6480;
+      --border: #2a3148;
+      --card-radius: 16px;
+      --btn-radius: 12px;
+      --font: 'Noto Sans KR', sans-serif;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    /* ── 헤더 ── */
+    .app-header {
+      background: var(--surface);
+      padding: 16px 20px 12px;
+      padding-top: calc(16px + env(safe-area-inset-top, 0px));
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-row { display: flex; align-items: center; justify-content: space-between; }
+    .app-title { font-size: 18px; font-weight: 700; color: var(--text); }
+    .week-nav { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .week-nav button { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 8px; font-family: var(--font); font-size: 13px; cursor: pointer; }
+    .week-nav button:active { opacity: 0.7; }
+    .week-label { flex: 1; text-align: center; font-size: 13px; color: var(--text2); font-weight: 500; }
+    /* ── 탭 ── */
+    .tab-bar { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .tab-item { flex: 1; padding: 12px 0; text-align: center; font-size: 13px; font-weight: 500; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: all .2s; }
+    .tab-item.active { color: var(--accent); border-bottom-color: var(--accent); }
+    /* ── 콘텐츠 ── */
+    .content { padding: 16px; padding-bottom: calc(80px + var(--safe-bottom)); }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    /* ── 카드 ── */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); padding: 16px; margin-bottom: 12px; }
+    .card-title { font-size: 12px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+    /* ── 목표 요약 ── */
+    .budget-summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .budget-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); padding: 14px 10px; text-align: center; }
+    .budget-stat .label { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+    .budget-stat .value { font-size: 16px; font-weight: 700; }
+    .budget-stat .value.danger { color: var(--danger); }
+    .budget-stat .value.success { color: var(--success); }
+    .budget-stat .value.accent { color: var(--accent); }
+    /* ── 진행 바 ── */
+    .progress-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); padding: 16px; margin-bottom: 12px; }
+    .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+    .progress-bar { height: 8px; background: var(--surface3); border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 4px; transition: width .5s ease; }
+    .progress-fill.ok { background: linear-gradient(90deg, var(--success), #6ee7b7); }
+    .progress-fill.warn { background: linear-gradient(90deg, var(--warning), #fde68a); }
+    .progress-fill.over { background: linear-gradient(90deg, var(--danger), #fca5a5); }
+    /* ── 카테고리 목록 ── */
+    .category-list { display: flex; flex-direction: column; gap: 8px; }
+    .cat-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+    .cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .cat-name { flex: 1; font-size: 14px; font-weight: 500; }
+    .cat-amounts { text-align: right; }
+    .cat-total { font-size: 14px; font-weight: 700; }
+    .cat-detail { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    /* ── 지출 목록 ── */
+    .tx-list { display: flex; flex-direction: column; gap: 6px; }
+    .tx-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+    .tx-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .tx-info { flex: 1; min-width: 0; }
+    .tx-desc { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tx-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .tx-right { text-align: right; flex-shrink: 0; }
+    .tx-amount { font-size: 14px; font-weight: 700; }
+    .tx-method { font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-top: 3px; display: inline-block; }
+    .tx-method.card { background: rgba(108,143,255,.15); color: var(--accent); }
+    .tx-method.cash { background: rgba(52,211,153,.15); color: var(--success); }
+    .tx-delete { background: none; border: none; color: var(--text3); font-size: 18px; cursor: pointer; padding: 4px; }
+    /* ── 빈 상태 ── */
+    .empty-state { text-align: center; padding: 48px 0; color: var(--text3); }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+    /* ── FAB ── */
+    .fab { position: fixed; right: 20px; bottom: calc(80px + var(--safe-bottom) + 16px); width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; color: white; font-size: 26px; cursor: pointer; box-shadow: 0 4px 20px rgba(108,143,255,.4); z-index: 200; display: flex; align-items: center; justify-content: center; }
+    .fab:active { transform: scale(.93); }
+    /* ── 바텀 탭 ── */
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; padding-bottom: var(--safe-bottom); z-index: 150; }
+    .nav-item { flex: 1; padding: 10px 0 8px; text-align: center; cursor: pointer; }
+    .nav-item .nav-icon { font-size: 22px; }
+    .nav-item .nav-label { font-size: 10px; color: var(--text3); margin-top: 2px; }
+    .nav-item.active .nav-label { color: var(--accent); }
+    /* ── 모달 ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 300; align-items: flex-end; }
+    .modal-overlay.open { display: flex; }
+    .modal-sheet { background: var(--surface); border-radius: 24px 24px 0 0; padding: 20px 20px calc(20px + var(--safe-bottom)); width: 100%; max-height: 92vh; overflow-y: auto; animation: slideUp .25s ease; }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+    .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+    /* ── 폼 ── */
+    .form-group { margin-bottom: 16px; }
+    .form-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
+    .form-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-family: var(--font); font-size: 15px; outline: none; }
+    .form-input:focus { border-color: var(--accent); }
+    .form-select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-family: var(--font); font-size: 15px; appearance: none; outline: none; }
+    .toggle-group { display: flex; gap: 8px; }
+    .toggle-btn { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface2); color: var(--text2); font-family: var(--font); font-size: 14px; cursor: pointer; text-align: center; transition: all .2s; }
+    .toggle-btn.selected { background: rgba(108,143,255,.2); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .btn-primary { width: 100%; padding: 15px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 12px; color: white; font-family: var(--font); font-size: 15px; font-weight: 700; cursor: pointer; }
+    .btn-primary:active { opacity: .85; }
+    .btn-secondary { width: 100%; padding: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text2); font-family: var(--font); font-size: 14px; cursor: pointer; margin-top: 8px; }
+    /* ── 카테고리 설정 ── */
+    .setting-item { display: flex; align-items: center; gap: 12px; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; }
+    .setting-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .setting-name { flex: 1; font-size: 14px; font-weight: 500; }
+    .setting-del { background: none; border: none; color: var(--danger); font-size: 20px; cursor: pointer; padding: 4px 8px; }
+    .color-swatches { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+    .swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+    .swatch.selected { border-color: white; transform: scale(1.15); }
+    /* ── 목표 설정 ── */
+    .goal-section { margin-bottom: 16px; }
+    .goal-label { font-size: 13px; color: var(--text2); margin-bottom: 8px; }
+    .goal-row { display: flex; align-items: center; gap: 10px; }
+    .goal-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; color: var(--text); font-family: var(--font); font-size: 15px; outline: none; }
+    .goal-input:focus { border-color: var(--accent); }
+    /* ── 섹션 타이틀 ── */
+    .section-title { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .6px; margin: 16px 0 10px; }
+    /* ── 주간 요약 차트 ── */
+    .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 80px; margin-top: 8px; }
+    .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
+    .bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+    .bar-fill { width: 100%; border-radius: 4px 4px 0 0; min-height: 3px; transition: height .4s ease; }
+    .bar-day { font-size: 10px; color: var(--text3); }
+    /* ── export ── */
+    .export-btn { display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; color: var(--text); cursor: pointer; width: 100%; font-family: var(--font); font-size: 14px; font-weight: 500; margin-bottom: 10px; }
+    .export-btn .ex-icon { font-size: 22px; }
+  </style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<div class="app-header">
+  <div class="header-row">
+    <div class="app-title">💰 가계부</div>
+  </div>
+  <div class="week-nav">
+    <button onclick="changeWeek(-1)">‹ 이전</button>
+    <div class="week-label" id="weekLabel">이번 주</div>
+    <button onclick="changeWeek(1)">다음 ›</button>
+  </div>
+</div>
+
+<!-- 탭바 -->
+<div class="tab-bar" id="tabBar">
+  <div class="tab-item active" onclick="switchTab('home')">홈</div>
+  <div class="tab-item" onclick="switchTab('list')">내역</div>
+  <div class="tab-item" onclick="switchTab('stats')">분석</div>
+  <div class="tab-item" onclick="switchTab('settings')">설정</div>
+</div>
+
+<!-- 콘텐츠 -->
+<div class="content">
+
+  <!-- ① 홈 -->
+  <div class="screen active" id="screen-home">
+    <!-- 목표 대비 진행 -->
+    <div class="progress-wrap" id="weekProgressCard">
+      <div class="progress-label">
+        <span>주간 지출</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill ok" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="progress-label" style="margin-top:8px; margin-bottom:0">
+        <span id="progressSpent" style="font-size:15px; font-weight:700; color:var(--text)">₩0</span>
+        <span id="progressGoal" style="color:var(--text3)">목표 미설정</span>
+      </div>
+    </div>
+    <!-- 요약 박스 -->
+    <div class="budget-summary">
+      <div class="budget-stat"><div class="label">총 지출</div><div class="value accent" id="totalSpent">₩0</div></div>
+      <div class="budget-stat"><div class="label">카드</div><div class="value" id="totalCard">₩0</div></div>
+      <div class="budget-stat"><div class="label">현금</div><div class="value success" id="totalCash">₩0</div></div>
+    </div>
+    <!-- 카테고리별 -->
+    <div class="section-title">카테고리별 지출</div>
+    <div class="category-list" id="catSummary">
+      <div class="empty-state"><div class="icon">📋</div><p>이번 주 지출 내역이 없어요</p></div>
+    </div>
+  </div>
+
+  <!-- ② 내역 -->
+  <div class="screen" id="screen-list">
+    <div class="section-title">지출 내역</div>
+    <div class="tx-list" id="txList">
+      <div class="empty-state"><div class="icon">🧾</div><p>지출을 추가해 보세요</p></div>
+    </div>
+  </div>
+
+  <!-- ③ 분석 -->
+  <div class="screen" id="screen-stats">
+    <div class="card">
+      <div class="card-title">요일별 지출</div>
+      <div class="bar-chart" id="barChart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">결제 수단 비율</div>
+      <div id="methodChart" style="margin-top:4px"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">카테고리 순위</div>
+      <div id="rankList"></div>
+    </div>
+    <button class="export-btn" onclick="exportExcel()"><span class="ex-icon">📊</span> 엑셀 파일로 내보내기 (.xlsx)</button>
+    <button class="export-btn" onclick="exportCSV()"><span class="ex-icon">📄</span> CSV 파일로 내보내기</button>
+  </div>
+
+  <!-- ④ 설정 -->
+  <div class="screen" id="screen-settings">
+    <div class="section-title">주간 목표 금액</div>
+    <div class="card" style="padding:14px">
+      <div class="goal-row">
+        <input type="number" class="goal-input" id="weekGoalInput" placeholder="목표 금액 입력" inputmode="numeric" />
+        <button class="btn-primary" style="width:auto; padding:10px 16px; font-size:13px" onclick="saveGoal()">저장</button>
+      </div>
+    </div>
+
+    <div class="section-title">카테고리 관리</div>
+    <div id="catSettingList"></div>
+    <button class="btn-secondary" onclick="openAddCatModal()">+ 카테고리 추가</button>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="openAddTxModal()">+</button>
+
+<!-- 바텀 내비 -->
+<div class="bottom-nav">
+  <div class="nav-item active" id="nav-home" onclick="switchScreen('home')">
+    <div class="nav-icon">🏠</div><div class="nav-label">홈</div>
+  </div>
+  <div class="nav-item" id="nav-list" onclick="switchScreen('list')">
+    <div class="nav-icon">📋</div><div class="nav-label">내역</div>
+  </div>
+  <div class="nav-item" id="nav-stats" onclick="switchScreen('stats')">
+    <div class="nav-icon">📊</div><div class="nav-label">분석</div>
+  </div>
+  <div class="nav-item" id="nav-settings" onclick="switchScreen('settings')">
+    <div class="nav-icon">⚙️</div><div class="nav-label">설정</div>
+  </div>
+</div>
+
+<!-- 모달: 지출 추가 -->
+<div class="modal-overlay" id="addTxModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">지출 추가</div>
+    <div class="form-group">
+      <div class="form-label">금액 (원)</div>
+      <input type="number" class="form-input" id="txAmount" placeholder="0" inputmode="numeric" />
+    </div>
+    <div class="form-group">
+      <div class="form-label">카테고리</div>
+      <select class="form-select" id="txCat"></select>
+    </div>
+    <div class="form-group">
+      <div class="form-label">결제 수단</div>
+      <div class="toggle-group">
+        <div class="toggle-btn selected" id="btn-card" onclick="selectMethod('card')">💳 카드</div>
+        <div class="toggle-btn" id="btn-cash" onclick="selectMethod('cash')">💵 현금</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">메모 (선택)</div>
+      <input type="text" class="form-input" id="txMemo" placeholder="예: 점심 식사" />
+    </div>
+    <div class="form-group">
+      <div class="form-label">날짜</div>
+      <input type="date" class="form-input" id="txDate" />
+    </div>
+    <button class="btn-primary" onclick="saveTx()">저장하기</button>
+    <button class="btn-secondary" onclick="closeModal('addTxModal')">취소</button>
+  </div>
+</div>
+
+<!-- 모달: 카테고리 추가 -->
+<div class="modal-overlay" id="addCatModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">카테고리 추가</div>
+    <div class="form-group">
+      <div class="form-label">이름</div>
+      <input type="text" class="form-input" id="catName" placeholder="예: 식비" />
+    </div>
+    <div class="form-group">
+      <div class="form-label">이모지</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px" id="emojiPicker">
+        🍔 🚌 🛍️ 💊 🎬 ☕ 🏠 ✈️ 🐶 📚 🎮 💇 💸 🧴 🛒 🍺
+      </div>
+      <input type="text" class="form-input" id="catEmoji" placeholder="이모지 직접 입력" style="margin-top:8px" />
+    </div>
+    <div class="form-group">
+      <div class="form-label">색상</div>
+      <div class="color-swatches" id="colorPicker"></div>
+    </div>
+    <button class="btn-primary" onclick="saveCategory()">추가하기</button>
+    <button class="btn-secondary" onclick="closeModal('addCatModal')">취소</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ─────────── 데이터 ─────────── */
+const PALETTE = ['#6c8fff','#a78bfa','#34d399','#f87171','#fbbf24','#f472b6','#38bdf8','#fb923c','#a3e635','#e879f9'];
+let state = JSON.parse(localStorage.getItem('budgetApp') || 'null') || {
+  categories: [],
+  transactions: [],
+  weekGoal: null,
+  currentWeekOffset: 0
+};
+let selectedMethod = 'card';
+let selectedEmoji = '💸';
+let selectedColor = PALETTE[0];
+let editingCatId = null;
+
+function save() { localStorage.setItem('budgetApp', JSON.stringify(state)); }
+
+/* ─────────── 주간 계산 ─────────── */
+function getWeekRange(offset = 0) {
+  const now = new Date();
+  const day = now.getDay(); // 0=일
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+  mon.setHours(0,0,0,0);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  sun.setHours(23,59,59,999);
+  return { start: mon, end: sun };
+}
+function fmtDate(d) {
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+function updateWeekLabel() {
+  const { start, end } = getWeekRange(state.currentWeekOffset);
+  const label = state.currentWeekOffset === 0 ? `이번 주 (${fmtDate(start)}~${fmtDate(end)})`
+    : state.currentWeekOffset === -1 ? `지난 주 (${fmtDate(start)}~${fmtDate(end)})`
+    : `${fmtDate(start)}~${fmtDate(end)}`;
+  document.getElementById('weekLabel').textContent = label;
+}
+function changeWeek(dir) {
+  state.currentWeekOffset += dir;
+  save();
+  updateWeekLabel();
+  renderAll();
+}
+function getWeekTxs() {
+  const { start, end } = getWeekRange(state.currentWeekOffset);
+  return state.transactions.filter(t => {
+    const d = new Date(t.date);
+    return d >= start && d <= end;
+  });
+}
+
+/* ─────────── 포맷 ─────────── */
+function fmt(n) { return '₩' + Number(n).toLocaleString('ko-KR'); }
+
+/* ─────────── 렌더링 ─────────── */
+function renderAll() {
+  renderHome();
+  renderList();
+  renderStats();
+  renderCatSettings();
+}
+
+function renderHome() {
+  const txs = getWeekTxs();
+  const total = txs.reduce((s,t) => s + t.amount, 0);
+  const card = txs.filter(t=>t.method==='card').reduce((s,t)=>s+t.amount,0);
+  const cash = txs.filter(t=>t.method==='cash').reduce((s,t)=>s+t.amount,0);
+  document.getElementById('totalSpent').textContent = fmt(total);
+  document.getElementById('totalCard').textContent = fmt(card);
+  document.getElementById('totalCash').textContent = fmt(cash);
+
+  // 진행바
+  const goal = state.weekGoal;
+  const pct = goal ? Math.min(100, Math.round(total/goal*100)) : 0;
+  const fill = document.getElementById('progressFill');
+  fill.style.width = pct + '%';
+  fill.className = 'progress-fill ' + (pct >= 100 ? 'over' : pct >= 80 ? 'warn' : 'ok');
+  document.getElementById('progressPct').textContent = goal ? pct + '%' : '—';
+  document.getElementById('progressSpent').textContent = fmt(total);
+  document.getElementById('progressGoal').textContent = goal ? `/ 목표 ${fmt(goal)} (남은 금액 ${fmt(Math.max(0,goal-total))})` : '설정 탭에서 목표를 설정해보세요';
+
+  // 카테고리별
+  const catEl = document.getElementById('catSummary');
+  if (state.categories.length === 0 || txs.length === 0) {
+    catEl.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>이번 주 지출 내역이 없어요</p></div>';
+    return;
+  }
+  const bycat = {};
+  txs.forEach(t => {
+    if (!bycat[t.catId]) bycat[t.catId] = { total:0, card:0, cash:0 };
+    bycat[t.catId].total += t.amount;
+    bycat[t.catId][t.method] += t.amount;
+  });
+  const sorted = Object.entries(bycat).sort((a,b) => b[1].total - a[1].total);
+  catEl.innerHTML = sorted.map(([catId, data]) => {
+    const cat = state.categories.find(c => c.id == catId) || { name:'기타', emoji:'💸', color:'#8b95b0' };
+    return `<div class="cat-row">
+      <div class="cat-dot" style="background:${cat.color}"></div>
+      <div style="font-size:20px">${cat.emoji}</div>
+      <div class="cat-name">${cat.name}</div>
+      <div class="cat-amounts">
+        <div class="cat-total">${fmt(data.total)}</div>
+        <div class="cat-detail">카드 ${fmt(data.card)} · 현금 ${fmt(data.cash)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderList() {
+  const txs = [...getWeekTxs()].sort((a,b) => new Date(b.date)-new Date(a.date));
+  const el = document.getElementById('txList');
+  if (txs.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">🧾</div><p>지출을 추가해 보세요</p></div>';
+    return;
+  }
+  el.innerHTML = txs.map(t => {
+    const cat = state.categories.find(c => c.id == t.catId) || { name:'기타', emoji:'💸', color:'#8b95b0' };
+    const d = new Date(t.date);
+    const dateStr = `${d.getMonth()+1}/${d.getDate()} (${['일','월','화','수','목','금','토'][d.getDay()]})`;
+    return `<div class="tx-item">
+      <div class="tx-icon" style="background:${cat.color}22">${cat.emoji}</div>
+      <div class="tx-info">
+        <div class="tx-desc">${t.memo || cat.name}</div>
+        <div class="tx-meta">${dateStr} · ${cat.name}</div>
+      </div>
+      <div class="tx-right">
+        <div class="tx-amount">${fmt(t.amount)}</div>
+        <div class="tx-method ${t.method}">${t.method === 'card' ? '💳 카드' : '💵 현금'}</div>
+      </div>
+      <button class="tx-delete" onclick="deleteTx('${t.id}')">×</button>
+    </div>`;
+  }).join('');
+}
+
+function renderStats() {
+  const txs = getWeekTxs();
+  // 요일별 바 차트
+  const days = ['월','화','수','목','금','토','일'];
+  const { start } = getWeekRange(state.currentWeekOffset);
+  const byDay = Array(7).fill(0);
+  txs.forEach(t => {
+    const d = new Date(t.date);
+    const idx = (d.getDay() + 6) % 7;
+    byDay[idx] += t.amount;
+  });
+  const maxDay = Math.max(...byDay, 1);
+  document.getElementById('barChart').innerHTML = byDay.map((v, i) => {
+    const h = Math.round((v/maxDay)*70);
+    const clr = v > 0 ? 'var(--accent)' : 'var(--surface3)';
+    return `<div class="bar-col">
+      <div class="bar-wrap"><div class="bar-fill" style="height:${h}px; background:${clr}"></div></div>
+      <div class="bar-day">${days[i]}</div>
+    </div>`;
+  }).join('');
+
+  // 결제 수단 비율
+  const cardAmt = txs.filter(t=>t.method==='card').reduce((s,t)=>s+t.amount,0);
+  const cashAmt = txs.filter(t=>t.method==='cash').reduce((s,t)=>s+t.amount,0);
+  const tot = cardAmt + cashAmt || 1;
+  const cardPct = Math.round(cardAmt/tot*100);
+  document.getElementById('methodChart').innerHTML = `
+    <div style="display:flex; height:12px; border-radius:6px; overflow:hidden; margin-bottom:10px">
+      <div style="width:${cardPct}%; background:var(--accent)"></div>
+      <div style="flex:1; background:var(--success)"></div>
+    </div>
+    <div style="display:flex; gap:16px; font-size:13px">
+      <div><span style="color:var(--accent)">●</span> 카드 ${fmt(cardAmt)} (${cardPct}%)</div>
+      <div><span style="color:var(--success)">●</span> 현금 ${fmt(cashAmt)} (${100-cardPct}%)</div>
+    </div>`;
+
+  // 카테고리 순위
+  const bycat = {};
+  txs.forEach(t => { bycat[t.catId] = (bycat[t.catId]||0) + t.amount; });
+  const sorted = Object.entries(bycat).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('rankList').innerHTML = sorted.length === 0
+    ? '<div style="color:var(--text3);font-size:13px;padding:8px 0">데이터 없음</div>'
+    : sorted.map(([catId, amt], i) => {
+      const cat = state.categories.find(c=>c.id==catId)||{name:'기타',emoji:'💸',color:'#8b95b0'};
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;color:var(--text3);width:16px;text-align:center">${i+1}</div>
+        <div style="font-size:18px">${cat.emoji}</div>
+        <div style="flex:1;font-size:14px">${cat.name}</div>
+        <div style="font-size:14px;font-weight:700">${fmt(amt)}</div>
+      </div>`;
+    }).join('');
+}
+
+function renderCatSettings() {
+  const el = document.getElementById('catSettingList');
+  if (state.categories.length === 0) {
+    el.innerHTML = '<div class="empty-state" style="padding:24px 0"><div class="icon">📁</div><p>아직 카테고리가 없어요</p></div>';
+    return;
+  }
+  el.innerHTML = state.categories.map(cat => `
+    <div class="setting-item">
+      <div class="setting-icon" style="background:${cat.color}22">${cat.emoji}</div>
+      <div class="setting-name">${cat.name}</div>
+      <button class="setting-del" onclick="deleteCat('${cat.id}')">×</button>
+    </div>`).join('');
+  if (state.weekGoal) document.getElementById('weekGoalInput').value = state.weekGoal;
+}
+
+/* ─────────── 지출 추가 ─────────── */
+function openAddTxModal() {
+  if (state.categories.length === 0) { alert('먼저 설정 탭에서 카테고리를 추가해 주세요!'); return; }
+  const sel = document.getElementById('txCat');
+  sel.innerHTML = state.categories.map(c => `<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
+  selectedMethod = 'card';
+  document.getElementById('btn-card').classList.add('selected');
+  document.getElementById('btn-cash').classList.remove('selected');
+  document.getElementById('txAmount').value = '';
+  document.getElementById('txMemo').value = '';
+  // 날짜 기본값: 오늘
+  const today = new Date();
+  document.getElementById('txDate').value = today.toISOString().split('T')[0];
+  document.getElementById('addTxModal').classList.add('open');
+}
+function selectMethod(m) {
+  selectedMethod = m;
+  document.getElementById('btn-card').classList.toggle('selected', m==='card');
+  document.getElementById('btn-cash').classList.toggle('selected', m==='cash');
+}
+function saveTx() {
+  const amount = parseInt(document.getElementById('txAmount').value);
+  if (!amount || amount <= 0) { alert('금액을 입력해 주세요'); return; }
+  const catId = document.getElementById('txCat').value;
+  const memo = document.getElementById('txMemo').value.trim();
+  const date = document.getElementById('txDate').value;
+  if (!date) { alert('날짜를 선택해 주세요'); return; }
+  state.transactions.push({ id: Date.now().toString(), amount, catId, method: selectedMethod, memo, date });
+  save();
+  closeModal('addTxModal');
+  renderAll();
+}
+function deleteTx(id) {
+  if (!confirm('삭제할까요?')) return;
+  state.transactions = state.transactions.filter(t => t.id !== id);
+  save(); renderAll();
+}
+
+/* ─────────── 카테고리 ─────────── */
+function openAddCatModal() {
+  document.getElementById('catName').value = '';
+  document.getElementById('catEmoji').value = '';
+  selectedEmoji = '💸';
+  selectedColor = PALETTE[0];
+  buildColorPicker();
+  buildEmojiPicker();
+  document.getElementById('addCatModal').classList.add('open');
+}
+function buildColorPicker() {
+  document.getElementById('colorPicker').innerHTML = PALETTE.map(c =>
+    `<div class="swatch ${c===selectedColor?'selected':''}" style="background:${c}" onclick="pickColor('${c}')"></div>`
+  ).join('');
+}
+function buildEmojiPicker() {
+  const emojis = ['🍔','🚌','🛍️','💊','🎬','☕','🏠','✈️','🐶','📚','🎮','💇','💸','🧴','🛒','🍺'];
+  document.getElementById('emojiPicker').innerHTML = emojis.map(e =>
+    `<span style="font-size:26px;cursor:pointer;padding:4px" onclick="pickEmoji('${e}')">${e}</span>`
+  ).join('');
+}
+function pickColor(c) { selectedColor = c; buildColorPicker(); }
+function pickEmoji(e) { selectedEmoji = e; document.getElementById('catEmoji').value = e; }
+function saveCategory() {
+  const name = document.getElementById('catName').value.trim();
+  if (!name) { alert('카테고리 이름을 입력해 주세요'); return; }
+  const emojiInput = document.getElementById('catEmoji').value.trim();
+  const emoji = emojiInput || selectedEmoji;
+  state.categories.push({ id: Date.now().toString(), name, emoji, color: selectedColor });
+  save(); closeModal('addCatModal'); renderAll();
+}
+function deleteCat(id) {
+  if (!confirm('카테고리를 삭제하면 관련 내역도 카테고리가 사라집니다. 삭제할까요?')) return;
+  state.categories = state.categories.filter(c => c.id !== id);
+  save(); renderAll();
+}
+
+/* ─────────── 목표 ─────────── */
+function saveGoal() {
+  const v = parseInt(document.getElementById('weekGoalInput').value);
+  if (!v || v <= 0) { alert('올바른 금액을 입력해 주세요'); return; }
+  state.weekGoal = v;
+  save(); renderAll();
+  alert('목표 금액이 저장되었습니다!');
+}
+
+/* ─────────── 탭/화면 ─────────── */
+function switchTab(name) {
+  document.querySelectorAll('.tab-item').forEach((el,i) => {
+    const names = ['home','list','stats','settings'];
+    el.classList.toggle('active', names[i] === name);
+  });
+  switchScreen(name);
+}
+function switchScreen(name) {
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('nav-' + name)?.classList.add('active');
+  document.querySelectorAll('.tab-item').forEach((el,i) => {
+    const names = ['home','list','stats','settings'];
+    el.classList.toggle('active', names[i] === name);
+  });
+  if (name === 'stats') renderStats();
+  if (name === 'settings') renderCatSettings();
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+/* ─────────── 엑셀 내보내기 ─────────── */
+function exportExcel() {
+  if (!window.XLSX) { alert('엑셀 라이브러리를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.'); return; }
+  const { start, end } = getWeekRange(state.currentWeekOffset);
+  const txs = getWeekTxs().sort((a,b) => new Date(a.date)-new Date(b.date));
+  if (txs.length === 0) { alert('내보낼 내역이 없습니다.'); return; }
+
+  const data = txs.map(t => {
+    const cat = state.categories.find(c=>c.id==t.catId)||{name:'기타'};
+    return { '날짜': t.date, '카테고리': cat.name, '금액': t.amount, '결제수단': t.method==='card'?'카드':'현금', '메모': t.memo||'' };
+  });
+
+  // 요약 시트
+  const bycat = {};
+  txs.forEach(t => {
+    const cat = state.categories.find(c=>c.id==t.catId)||{name:'기타'};
+    if (!bycat[cat.name]) bycat[cat.name] = { 카테고리: cat.name, 총지출: 0, 카드: 0, 현금: 0 };
+    bycat[cat.name].총지출 += t.amount;
+    bycat[cat.name][t.method==='card'?'카드':'현금'] += t.amount;
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.json_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws1, '지출내역');
+  const ws2 = XLSX.utils.json_to_sheet(Object.values(bycat));
+  XLSX.utils.book_append_sheet(wb, ws2, '카테고리요약');
+
+  const weekStr = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `가계부_${weekStr}.xlsx`);
+}
+function exportCSV() {
+  const txs = getWeekTxs().sort((a,b) => new Date(a.date)-new Date(b.date));
+  if (txs.length === 0) { alert('내보낼 내역이 없습니다.'); return; }
+  const rows = [['날짜','카테고리','금액','결제수단','메모']];
+  txs.forEach(t => {
+    const cat = state.categories.find(c=>c.id==t.catId)||{name:'기타'};
+    rows.push([t.date, cat.name, t.amount, t.method==='card'?'카드':'현금', t.memo||'']);
+  });
+  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  const { start } = getWeekRange(state.currentWeekOffset);
+  a.download = `가계부_${start.toISOString().split('T')[0]}.csv`;
+  a.click();
+}
+
+/* ─────────── 초기화 ─────────── */
+updateWeekLabel();
+renderAll();
+
+/* ─────────── PWA Service Worker ─────────── */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
